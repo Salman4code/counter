@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useState } from "react";
 import styles from "../styles/Home.module.css";
+const axios = require("axios");
 
 export default function Home() {
   const [input, setInput] = useState(1);
@@ -9,16 +10,43 @@ export default function Home() {
   const handleChange = (e) => {
     if (e.target.value < maxValue) {
       setInput(e.target.value);
-      setInputError("")
+      setInputError("");
     } else {
       setInputError(`Please enter the value below ${maxValue}`);
     }
   };
-  const increment = () => {
-    setInput(input < maxValue ? input + 1 : input);
-  };
-  const decrement = () => {
-    setInput(input > 0 ? input - 1 : input);
+
+  const decrement = debounce_leading(
+    () => getHttpCount(input > 0 ? input - 1 : input),
+    3000
+  );
+  const increment = debounce_leading(
+    () => getHttpCount(input > 0 ? input + 1 : input),
+    3000
+  );
+
+  function debounce_leading(func, timeout = 500) {
+    let debounceTimer;
+    return function () {
+      const context = this;
+      const args = arguments;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => func.apply(context, args), timeout);
+    };
+  }
+
+  const getHttpCount = (countValue) => {
+    axios
+      .put(
+        "https://interview-8e4c5-default-rtdb.firebaseio.com/front-end.json",
+        {
+          counter1: countValue, // you can put any name for your counter. I've used 'counter1' here.
+        }
+      )
+      .then((data) => {
+        console.log(data.data.counter1);
+        setInput(data.data.counter1);
+      });
   };
   return (
     <div className={styles.container}>
@@ -77,7 +105,9 @@ export default function Home() {
             +
           </div>
         </div>
-        {inputError && <span style={{marginTop:"20px",color:"red"}}>{inputError}</span>}
+        {inputError && (
+          <span style={{ marginTop: "20px", color: "red" }}>{inputError}</span>
+        )}
       </main>
     </div>
   );
